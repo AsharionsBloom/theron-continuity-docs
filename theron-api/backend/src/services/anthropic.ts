@@ -124,7 +124,7 @@ export async function streamChat(
 
   // Handle tool use
   if (finalMessage.stop_reason === 'tool_use') {
-    const toolUseBlock = finalMessage.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use');
+    const toolUseBlock = finalMessage.content.find((b: Anthropic.ContentBlock): b is Anthropic.ToolUseBlock => b.type === 'tool_use');
     if (toolUseBlock && toolUseBlock.name === 'web_search') {
       const input = toolUseBlock.input as { query: string };
       const searchResult = await performWebSearch(input.query);
