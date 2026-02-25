@@ -41,8 +41,21 @@ export interface MemorySuggestion {
   importance: number;
 }
 
+// Helper to handle API responses
+async function handleResponse<T>(response: Response): Promise<T> {
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+    console.error('API Error:', error);
+    throw new Error(error.error || `HTTP ${response.status}`);
+  }
+  return response.json();
+}
+
 // Conversations
-export const getConversations = () => fetch(`${BASE}/conversations`).then(r => r.json()) as Promise<Conversation[]>;
+export const getConversations = () => fetch(`${BASE}/conversations`).then(handleResponse<Conversation[]>).catch(err => {
+  console.error('Failed to fetch conversations:', err);
+  return [];
+});
 export const createConversation = (data?: Partial<Conversation>) =>
   fetch(`${BASE}/conversations`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data || {}) }).then(r => r.json()) as Promise<Conversation>;
 export const updateConversation = (id: string, data: Partial<Conversation>) =>
@@ -50,14 +63,20 @@ export const updateConversation = (id: string, data: Partial<Conversation>) =>
 export const deleteConversation = (id: string, generateSummary = false) =>
   fetch(`${BASE}/conversations/${id}?generateSummaryFirst=${generateSummary}`, { method: 'DELETE' }).then(r => r.json());
 export const getMessages = (conversationId: string) =>
-  fetch(`${BASE}/conversations/${conversationId}/messages`).then(r => r.json()) as Promise<Message[]>;
+  fetch(`${BASE}/conversations/${conversationId}/messages`).then(handleResponse<Message[]>).catch(err => {
+    console.error('Failed to fetch messages:', err);
+    return [];
+  });
 export const summarizeConversation = (id: string) =>
   fetch(`${BASE}/conversations/${id}/summarize`, { method: 'POST' }).then(r => r.json()) as Promise<Summary>;
 
 // Memories
 export const getMemories = (params?: { category?: string; search?: string }) => {
   const qs = new URLSearchParams(params as Record<string, string>).toString();
-  return fetch(`${BASE}/memories${qs ? '?' + qs : ''}`).then(r => r.json()) as Promise<Memory[]>;
+  return fetch(`${BASE}/memories${qs ? '?' + qs : ''}`).then(handleResponse<Memory[]>).catch(err => {
+    console.error('Failed to fetch memories:', err);
+    return [];
+  });
 };
 export const createMemory = (data: Omit<Memory, 'id' | 'createdAt' | 'updatedAt'>) =>
   fetch(`${BASE}/memories`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()) as Promise<Memory>;
@@ -69,7 +88,10 @@ export const deleteMemory = (id: string) =>
   fetch(`${BASE}/memories/${id}`, { method: 'DELETE' }).then(r => r.json());
 
 // Summaries
-export const getSummaries = () => fetch(`${BASE}/summaries`).then(r => r.json()) as Promise<Summary[]>;
+export const getSummaries = () => fetch(`${BASE}/summaries`).then(handleResponse<Summary[]>).catch(err => {
+  console.error('Failed to fetch summaries:', err);
+  return [];
+});
 export const updateSummary = (id: string, data: Partial<Summary>) =>
   fetch(`${BASE}/summaries/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()) as Promise<Summary>;
 export const deleteSummary = (id: string) =>

@@ -24,6 +24,7 @@ const defaultSettings: AppSettings = {
 export default function App() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
+  const [backendError, setBackendError] = useState<string | null>(null);
   const [settings, setSettings] = useState<AppSettings>(() => {
     try {
       const saved = localStorage.getItem('theron-settings');
@@ -47,11 +48,13 @@ export default function App() {
     try {
       const convs = await getConversations();
       setConversations(convs);
+      setBackendError(null);
       if (convs.length > 0 && !activeConversation) {
         setActiveConversation(convs[0]);
       }
     } catch (err) {
       console.error('Failed to load conversations:', err);
+      setBackendError('Cannot connect to backend. Please check that VITE_API_URL is set in Vercel and DATABASE_URL is set in your backend hosting.');
     }
   }
 
@@ -93,6 +96,15 @@ export default function App() {
         onToggle={() => setSidebarOpen(v => !v)}
       />
       <main className="flex-1 flex flex-col min-w-0">
+        {backendError && (
+          <div className="bg-destructive/10 border-l-4 border-destructive text-destructive px-4 py-3 m-4">
+            <p className="font-bold">Backend Connection Error</p>
+            <p className="text-sm mt-1">{backendError}</p>
+            <button onClick={loadConversations} className="mt-2 text-sm underline hover:no-underline">
+              Retry
+            </button>
+          </div>
+        )}
         {activeConversation ? (
           <ChatWindow
             conversation={activeConversation}
