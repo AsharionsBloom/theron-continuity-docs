@@ -38,7 +38,7 @@ export default function MessageInput({ onSend, isStreaming }: Props) {
     }
   }
 
-  function addImages(files: FileList | null) {
+  function addImages(files: FileList | File[] | null) {
     if (!files) return;
     const newFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
     setImages(prev => [...prev, ...newFiles]);
@@ -61,7 +61,7 @@ export default function MessageInput({ onSend, isStreaming }: Props) {
     if (imageItems.length > 0) {
       e.preventDefault();
       const files = imageItems.map(item => item.getAsFile()).filter(Boolean) as File[];
-      addImages({ length: files.length, ...files, item: (i: number) => files[i] } as unknown as FileList);
+      addImages(files);
     }
   }, []);
 
