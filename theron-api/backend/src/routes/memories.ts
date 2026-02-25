@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../db/index.js';
 import { memories } from '../db/schema.js';
-import { eq, ilike, or } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 const router = Router();
 
@@ -9,7 +9,6 @@ const router = Router();
 router.get('/', async (req: Request, res: Response) => {
   try {
     const { category, search } = req.query;
-    let query = db.select().from(memories);
 
     const allMemories = await db.select().from(memories);
 
@@ -25,7 +24,8 @@ router.get('/', async (req: Request, res: Response) => {
     filtered.sort((a, b) => b.importance - a.importance || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     res.json(filtered);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch memories' });
+    console.error('[GET /memories]', err);
+    res.status(500).json({ error: 'Failed to fetch memories', detail: String(err) });
   }
 });
 
@@ -40,7 +40,8 @@ router.post('/', async (req: Request, res: Response) => {
     }).returning();
     res.json(mem);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to create memory' });
+    console.error('[POST /memories]', err);
+    res.status(500).json({ error: 'Failed to create memory', detail: String(err) });
   }
 });
 
@@ -55,7 +56,8 @@ router.post('/bulk', async (req: Request, res: Response) => {
     }))).returning();
     res.json(inserted);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to bulk import memories' });
+    console.error('[POST /memories/bulk]', err);
+    res.status(500).json({ error: 'Failed to bulk import memories', detail: String(err) });
   }
 });
 
@@ -71,7 +73,8 @@ router.patch('/:id', async (req: Request, res: Response) => {
     const [mem] = await db.update(memories).set(updates).where(eq(memories.id, id)).returning();
     res.json(mem);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to update memory' });
+    console.error('[PATCH /memories/:id]', err);
+    res.status(500).json({ error: 'Failed to update memory', detail: String(err) });
   }
 });
 
@@ -82,7 +85,8 @@ router.delete('/:id', async (req: Request, res: Response) => {
     await db.delete(memories).where(eq(memories.id, id));
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to delete memory' });
+    console.error('[DELETE /memories/:id]', err);
+    res.status(500).json({ error: 'Failed to delete memory', detail: String(err) });
   }
 });
 

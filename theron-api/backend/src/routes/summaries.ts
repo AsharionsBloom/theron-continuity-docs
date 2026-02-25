@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../db/index.js';
 import { summaries } from '../db/schema.js';
-import { eq, desc, sql } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 
 const router = Router();
 
@@ -11,7 +11,8 @@ router.get('/', async (_req: Request, res: Response) => {
     const all = await db.select().from(summaries).orderBy(desc(summaries.createdAt));
     res.json(all);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch summaries' });
+    console.error('[GET /summaries]', err);
+    res.status(500).json({ error: 'Failed to fetch summaries', detail: String(err) });
   }
 });
 
@@ -26,7 +27,8 @@ router.patch('/:id', async (req: Request, res: Response) => {
     const [s] = await db.update(summaries).set(updates).where(eq(summaries.id, id)).returning();
     res.json(s);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to update summary' });
+    console.error('[PATCH /summaries/:id]', err);
+    res.status(500).json({ error: 'Failed to update summary', detail: String(err) });
   }
 });
 
@@ -37,7 +39,8 @@ router.delete('/:id', async (req: Request, res: Response) => {
     await db.delete(summaries).where(eq(summaries.id, id));
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to delete summary' });
+    console.error('[DELETE /summaries/:id]', err);
+    res.status(500).json({ error: 'Failed to delete summary', detail: String(err) });
   }
 });
 
@@ -53,7 +56,6 @@ router.post('/auto-archive', async (_req: Request, res: Response) => {
     const maxChars = 60000 * 4;
 
     const archived: string[] = [];
-    // Archive oldest first until under limit
     for (const s of active) {
       if (totalChars <= maxChars) break;
       await db.update(summaries).set({ status: 'archived' }).where(eq(summaries.id, s.id));
@@ -63,7 +65,8 @@ router.post('/auto-archive', async (_req: Request, res: Response) => {
 
     res.json({ archived });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to auto-archive summaries' });
+    console.error('[POST /summaries/auto-archive]', err);
+    res.status(500).json({ error: 'Failed to auto-archive summaries', detail: String(err) });
   }
 });
 

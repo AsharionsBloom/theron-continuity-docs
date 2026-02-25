@@ -30,10 +30,24 @@ app.get('/api/health', (_req, res) => {
     status: 'ok',
     hasAnthropicKey: !!process.env.ANTHROPIC_API_KEY,
     hasPerplexityKey: !!process.env.PERPLEXITY_API_KEY,
-    hasSupabase: !!process.env.SUPABASE_URL
+    hasDatabase: !!(process.env.DATABASE_URL || process.env.SUPABASE_URL)
   });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Theron API running on port ${PORT}`);
+
+  // Verify DB connection at startup so errors surface immediately
+  try {
+    const { db } = await import('./db/index.js');
+    const { conversations } = await import('./db/schema.js');
+    await db.select().from(conversations).limit(1);
+    console.log('Database connection verified.');
+  } catch (err) {
+    console.error('Database connection FAILED:', err);
+    console.error('');
+    console.error('Fix: set DATABASE_URL in backend/.env to the PostgreSQL URI:');
+    console.error('  Supabase Dashboard → Settings → Database → Connection string → URI');
+    console.error('  It must start with postgresql://, not https://');
+  }
 });

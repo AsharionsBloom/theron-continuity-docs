@@ -12,7 +12,8 @@ router.get('/', async (_req: Request, res: Response) => {
     const all = await db.select().from(conversations).orderBy(desc(conversations.updatedAt));
     res.json(all);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch conversations' });
+    console.error('[GET /conversations]', err);
+    res.status(500).json({ error: 'Failed to fetch conversations', detail: String(err) });
   }
 });
 
@@ -26,7 +27,8 @@ router.post('/', async (req: Request, res: Response) => {
     }).returning();
     res.json(conv);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to create conversation' });
+    console.error('[POST /conversations]', err);
+    res.status(500).json({ error: 'Failed to create conversation', detail: String(err) });
   }
 });
 
@@ -41,7 +43,8 @@ router.patch('/:id', async (req: Request, res: Response) => {
     const [conv] = await db.update(conversations).set(updates).where(eq(conversations.id, id)).returning();
     res.json(conv);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to update conversation' });
+    console.error('[PATCH /conversations/:id]', err);
+    res.status(500).json({ error: 'Failed to update conversation', detail: String(err) });
   }
 });
 
@@ -66,7 +69,8 @@ router.delete('/:id', async (req: Request, res: Response) => {
     await db.delete(conversations).where(eq(conversations.id, id));
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to delete conversation' });
+    console.error('[DELETE /conversations/:id]', err);
+    res.status(500).json({ error: 'Failed to delete conversation', detail: String(err) });
   }
 });
 
@@ -79,7 +83,8 @@ router.get('/:id/messages', async (req: Request, res: Response) => {
       .orderBy(messages.timestamp);
     res.json(msgs);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch messages' });
+    console.error('[GET /conversations/:id/messages]', err);
+    res.status(500).json({ error: 'Failed to fetch messages', detail: String(err) });
   }
 });
 
@@ -100,7 +105,8 @@ router.post('/:id/summarize', async (req: Request, res: Response) => {
     const [s] = await db.insert(summaries).values({ conversationId: id, content: summary, status: 'active' }).returning();
     res.json(s);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to generate summary' });
+    console.error('[POST /conversations/:id/summarize]', err);
+    res.status(500).json({ error: 'Failed to generate summary', detail: String(err) });
   }
 });
 
