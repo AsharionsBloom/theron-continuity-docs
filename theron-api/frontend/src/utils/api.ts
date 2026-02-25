@@ -119,7 +119,7 @@ export async function streamChat(opts: StreamOptions): Promise<void> {
     }
   }
 
-  const response = await fetch('/api/chat/stream', { method: 'POST', body: formData });
+  const response = await fetch(`${BASE}/chat/stream`, { method: 'POST', body: formData });
 
   if (!response.body) throw new Error('No response body');
 
