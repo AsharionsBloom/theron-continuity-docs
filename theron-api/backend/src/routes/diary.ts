@@ -64,7 +64,8 @@ router.post('/entry', async (req: Request, res: Response) => {
 
     res.json({ entry: fullEntry, success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to generate diary entry' });
+    console.error('[POST /diary/entry]', err);
+    res.status(500).json({ error: 'Failed to generate diary entry', detail: String(err) });
   }
 });
 

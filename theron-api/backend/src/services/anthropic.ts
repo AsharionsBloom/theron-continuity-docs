@@ -28,7 +28,7 @@ export async function buildContext(): Promise<string> {
   const activeSummaries = await db
     .select()
     .from(summaries)
-    .where(eq(summaries.status, 'active'))
+    .where(eq(summaries.status, 'active' as any))
     .orderBy(desc(summaries.createdAt));
 
   let context = '';
@@ -124,8 +124,8 @@ export async function streamChat(
 
   // Handle tool use
   if (finalMessage.stop_reason === 'tool_use') {
-    const toolUseBlock = finalMessage.content.find(b => b.type === 'tool_use');
-    if (toolUseBlock && toolUseBlock.type === 'tool_use' && toolUseBlock.name === 'web_search') {
+    const toolUseBlock = finalMessage.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use');
+    if (toolUseBlock && toolUseBlock.name === 'web_search') {
       const input = toolUseBlock.input as { query: string };
       const searchResult = await performWebSearch(input.query);
 

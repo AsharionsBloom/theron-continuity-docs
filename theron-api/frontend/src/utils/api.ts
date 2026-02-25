@@ -1,4 +1,6 @@
-const BASE = '/api';
+// In dev: VITE_API_URL is unset, so BASE = '/api' and Vite's proxy forwards to localhost:5000
+// In production: VITE_API_URL = 'https://your-app.up.railway.app' (set in Vercel env vars)
+const BASE = (import.meta.env.VITE_API_URL ?? '') + '/api';
 
 export interface Conversation {
   id: string;

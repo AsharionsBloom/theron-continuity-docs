@@ -1,0 +1,10 @@
+[build]
+  # Install ALL deps (including devDeps for TypeScript) then compile
+  builder = "nixpacks"
+
+[deploy]
+  startCommand = "node dist/index.js"
+  healthcheckPath = "/api/health"
+  healthcheckTimeout = 30
+  restartPolicyType = "on_failure"
+  restartPolicyMaxRetries = 3
