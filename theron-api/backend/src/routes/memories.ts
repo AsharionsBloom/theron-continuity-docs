@@ -51,7 +51,7 @@ router.post('/bulk', async (req: Request, res: Response) => {
     const { items } = req.body as { items: Array<{ content: string; category: string; importance: number }> };
     const inserted = await db.insert(memories).values(items.map(i => ({
       content: i.content,
-      category: (i.category || 'General') as typeof memories.$inferInsert['category'],
+      category: (i.category || 'General') as any,
       importance: i.importance || 2
     }))).returning();
     res.json(inserted);
@@ -66,11 +66,11 @@ router.patch('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { content, category, importance } = req.body;
-    const updates: Partial<typeof memories.$inferInsert> = { updatedAt: new Date() };
+    const updates: any = { updatedAt: new Date() };
     if (content !== undefined) updates.content = content;
     if (category !== undefined) updates.category = category;
     if (importance !== undefined) updates.importance = importance;
-    const [mem] = await db.update(memories).set(updates).where(eq(memories.id, id)).returning();
+    const [mem] = await db.update(memories).set(updates).where(eq(memories.id, id as any)).returning();
     res.json(mem);
   } catch (err) {
     console.error('[PATCH /memories/:id]', err);
@@ -82,7 +82,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    await db.delete(memories).where(eq(memories.id, id));
+    await db.delete(memories).where(eq(memories.id, id as any));
     res.json({ success: true });
   } catch (err) {
     console.error('[DELETE /memories/:id]', err);

@@ -21,10 +21,10 @@ router.patch('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { content, status } = req.body;
-    const updates: Partial<typeof summaries.$inferInsert> = {};
+    const updates: any = {};
     if (content !== undefined) updates.content = content;
     if (status !== undefined) updates.status = status;
-    const [s] = await db.update(summaries).set(updates).where(eq(summaries.id, id)).returning();
+    const [s] = await db.update(summaries).set(updates).where(eq(summaries.id, id as any)).returning();
     res.json(s);
   } catch (err) {
     console.error('[PATCH /summaries/:id]', err);
@@ -36,7 +36,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    await db.delete(summaries).where(eq(summaries.id, id));
+    await db.delete(summaries).where(eq(summaries.id, id as any));
     res.json({ success: true });
   } catch (err) {
     console.error('[DELETE /summaries/:id]', err);
@@ -48,7 +48,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
 router.post('/auto-archive', async (_req: Request, res: Response) => {
   try {
     const active = await db.select().from(summaries)
-      .where(eq(summaries.status, 'active'))
+      .where(eq(summaries.status, 'active' as any))
       .orderBy(summaries.createdAt);
 
     // Estimate tokens (rough: 1 token ≈ 4 chars)
@@ -58,7 +58,7 @@ router.post('/auto-archive', async (_req: Request, res: Response) => {
     const archived: string[] = [];
     for (const s of active) {
       if (totalChars <= maxChars) break;
-      await db.update(summaries).set({ status: 'archived' }).where(eq(summaries.id, s.id));
+      await db.update(summaries).set({ status: 'archived' as any }).where(eq(summaries.id, s.id as any));
       totalChars -= s.content.length;
       archived.push(s.id);
     }

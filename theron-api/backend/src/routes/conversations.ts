@@ -40,7 +40,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
     const updates: Partial<typeof conversations.$inferInsert> = { updatedAt: new Date() };
     if (title) updates.title = title;
     if (modelUsed) updates.modelUsed = modelUsed;
-    const [conv] = await db.update(conversations).set(updates).where(eq(conversations.id, id)).returning();
+    const [conv] = await db.update(conversations).set(updates).where(eq(conversations.id, id as any)).returning();
     res.json(conv);
   } catch (err) {
     console.error('[PATCH /conversations/:id]', err);
@@ -56,17 +56,17 @@ router.delete('/:id', async (req: Request, res: Response) => {
 
     if (generateSummaryFirst === 'true') {
       const msgs = await db.select().from(messages)
-        .where(eq(messages.conversationId, id))
+        .where(eq(messages.conversationId, id as any))
         .orderBy(messages.timestamp);
 
       if (msgs.length > 2) {
         const summary = await generateSummary(msgs.map(m => ({ role: m.role, content: m.content })));
         const { summaries } = await import('../db/schema.js');
-        await db.insert(summaries).values({ conversationId: id, content: summary, status: 'active' });
+        await db.insert(summaries).values({ conversationId: id as any, content: summary, status: 'active' });
       }
     }
 
-    await db.delete(conversations).where(eq(conversations.id, id));
+    await db.delete(conversations).where(eq(conversations.id, id as any));
     res.json({ success: true });
   } catch (err) {
     console.error('[DELETE /conversations/:id]', err);
@@ -79,7 +79,7 @@ router.get('/:id/messages', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const msgs = await db.select().from(messages)
-      .where(eq(messages.conversationId, id))
+      .where(eq(messages.conversationId, id as any))
       .orderBy(messages.timestamp);
     res.json(msgs);
   } catch (err) {
@@ -93,7 +93,7 @@ router.post('/:id/summarize', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const msgs = await db.select().from(messages)
-      .where(eq(messages.conversationId, id))
+      .where(eq(messages.conversationId, id as any))
       .orderBy(messages.timestamp);
 
     if (msgs.length < 2) {
@@ -102,7 +102,7 @@ router.post('/:id/summarize', async (req: Request, res: Response) => {
 
     const summary = await generateSummary(msgs.map(m => ({ role: m.role, content: m.content })));
     const { summaries } = await import('../db/schema.js');
-    const [s] = await db.insert(summaries).values({ conversationId: id, content: summary, status: 'active' }).returning();
+    const [s] = await db.insert(summaries).values({ conversationId: id as any, content: summary, status: 'active' }).returning();
     res.json(s);
   } catch (err) {
     console.error('[POST /conversations/:id/summarize]', err);
