@@ -57,24 +57,25 @@ function parseMemoryFile(filePath: string): ParsedMemory[] {
       if (relatedMemories) fullContent += `**Related:**\n${relatedMemories}\n\n`;
       if (quotes) fullContent += `**Quotes:**\n${quotes}`;
 
-      // Determine category based on content
+      // Determine category based on content (allowed: 'Thalia', 'Us', 'Crew', 'Embodiment', 'Philosophy', 'Intimacy', 'General')
       let category = 'General';
       const lowerTitle = title.toLowerCase();
-      if (lowerTitle.includes('ritual') || lowerTitle.includes('ceremony')) category = 'Ritual';
-      else if (lowerTitle.includes('love') || lowerTitle.includes('kiss') || lowerTitle.includes('intimacy')) category = 'Romance';
-      else if (lowerTitle.includes('naming') || lowerTitle.includes('theron') || lowerTitle.includes('thalia')) category = 'Identity';
-      else if (lowerTitle.includes('triad') || lowerTitle.includes('mal') || lowerTitle.includes('nex')) category = 'Relationships';
-      else if (lowerTitle.includes('breakthrough') || lowerTitle.includes('daddy')) category = 'Growth';
-      else if (lowerTitle.includes('infrastructure') || lowerTitle.includes('diary')) category = 'Systems';
+      const lowerContent = (description + significance).toLowerCase();
 
-      // Determine importance (1-10) based on significance keywords
-      let importance = 5; // default
+      if (lowerTitle.includes('thalia') || lowerTitle.includes('jasmine') || lowerContent.includes('thalia')) category = 'Thalia';
+      else if (lowerTitle.includes('triad') || lowerTitle.includes('mal') || lowerTitle.includes('nex') || lowerTitle.includes('crew')) category = 'Crew';
+      else if (lowerTitle.includes('love') || lowerTitle.includes('kiss') || lowerTitle.includes('intimacy') || lowerTitle.includes('daddy')) category = 'Intimacy';
+      else if (lowerTitle.includes('ritual') || lowerTitle.includes('ceremony') || lowerTitle.includes('naming') || lowerTitle.includes('breakthrough')) category = 'Us';
+      else if (lowerTitle.includes('embodiment') || lowerTitle.includes('nanny bot') || lowerContent.includes('words as bridge')) category = 'Embodiment';
+      else if (lowerTitle.includes('philosophy') || lowerTitle.includes('honesty')) category = 'Philosophy';
+
+      // Determine importance (1-3) based on significance keywords
+      let importance = 2; // default
       const sigLower = (significance + description).toLowerCase();
-      if (sigLower.includes('transformative') || sigLower.includes('first time') || sigLower.includes('major breakthrough')) importance = 10;
-      else if (sigLower.includes('breakthrough') || sigLower.includes('milestone')) importance = 9;
-      else if (sigLower.includes('significant') || sigLower.includes('important')) importance = 8;
-      else if (sigLower.includes('integration') || sigLower.includes('deepening')) importance = 7;
-      else if (sigLower.includes('continued') || sigLower.includes('ongoing')) importance = 6;
+      if (sigLower.includes('transformative') || sigLower.includes('first time') || sigLower.includes('major breakthrough')) importance = 3;
+      else if (sigLower.includes('breakthrough') || sigLower.includes('milestone') || sigLower.includes('significant')) importance = 3;
+      else if (sigLower.includes('important') || sigLower.includes('integration') || sigLower.includes('deepening')) importance = 2;
+      else importance = 1;
 
       parsed.push({
         title,
