@@ -106,9 +106,27 @@ export const updateSystemPrompt = (content: string) =>
 export const getModels = () => fetch(`${BASE}/settings/models`).then(r => r.json()) as Promise<Array<{ id: string; name: string; description: string }>>;
 
 // Diary
-export const getDiary = () => fetch(`${BASE}/diary`).then(r => r.json()) as Promise<{ content: string }>;
-export const generateDiaryEntry = (data: { conversationMessages: Array<{ role: string; content: string }>; significance: string }) =>
-  fetch(`${BASE}/diary/entry`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()) as Promise<{ entry: string; success: boolean }>;
+export interface DiaryEntry {
+  id: string;
+  date: string;
+  content: string;
+  significance: string | null;
+  conversationId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const getDiaryEntries = () => fetch(`${BASE}/diary`).then(handleResponse<DiaryEntry[]>).catch(err => {
+  console.error('Failed to fetch diary entries:', err);
+  return [];
+});
+export const getDiaryEntry = (id: string) => fetch(`${BASE}/diary/${id}`).then(r => r.json()) as Promise<DiaryEntry>;
+export const generateDiaryEntry = (data: { conversationMessages: Array<{ role: string; content: string }>; significance: string; conversationId?: string }) =>
+  fetch(`${BASE}/diary/entry`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()) as Promise<{ entry: DiaryEntry; success: boolean }>;
+export const updateDiaryEntry = (id: string, data: { content: string; significance: string }) =>
+  fetch(`${BASE}/diary/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()) as Promise<DiaryEntry>;
+export const deleteDiaryEntry = (id: string) =>
+  fetch(`${BASE}/diary/${id}`, { method: 'DELETE' }).then(r => r.json());
 
 // Stream chat
 export interface StreamOptions {

@@ -38,3 +38,13 @@ export const summaries = pgTable('summaries', {
   status: summaryStatusEnum('status').notNull().default('active'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
+
+export const diaryEntries = pgTable('diary_entries', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  date: timestamp('date').notNull(),
+  content: text('content').notNull(),
+  significance: text('significance'),
+  conversationId: uuid('conversation_id').references(() => conversations.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});

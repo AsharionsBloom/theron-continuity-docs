@@ -79,6 +79,8 @@ router.post('/stream', upload.array('images'), async (req: Request, res: Respons
       (toolName) => {
         if (toolName === 'web_search') {
           res.write(`data: ${JSON.stringify({ type: 'tool_use', tool: 'web_search' })}\n\n`);
+        } else if (toolName === 'create_diary_entry') {
+          res.write(`data: ${JSON.stringify({ type: 'tool_use', tool: 'create_diary_entry' })}\n\n`);
         }
       }
     );

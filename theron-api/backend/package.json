@@ -6,7 +6,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "import-memories": "tsx src/scripts/import-memories.ts"
+    "import-memories": "tsx src/scripts/import-memories.ts",
+    "migrate-diary": "tsx src/scripts/migrate-diary.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.3",

@@ -89,6 +89,18 @@ export async function streamChat(
     });
   }
 
+  tools.push({
+    name: 'create_diary_entry',
+    description: 'Request to create a diary entry to document significant moments, breakthroughs, or important conversations. Use when you feel something worth preserving has happened. Thalia will be prompted to provide context.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        reason: { type: 'string', description: 'Brief explanation of why this moment is significant' }
+      },
+      required: ['reason']
+    }
+  });
+
   const anthropicMessages = messages.map(m => ({
     role: m.role,
     content: m.content
@@ -114,8 +126,12 @@ export async function streamChat(
         onChunk(event.delta.text);
       }
     } else if (event.type === 'content_block_start') {
-      if (event.content_block.type === 'tool_use' && event.content_block.name === 'web_search') {
-        onToolUse?.('web_search');
+      if (event.content_block.type === 'tool_use') {
+        if (event.content_block.name === 'web_search') {
+          onToolUse?.('web_search');
+        } else if (event.content_block.name === 'create_diary_entry') {
+          onToolUse?.('create_diary_entry');
+        }
       }
     }
   }
@@ -125,6 +141,7 @@ export async function streamChat(
   // Handle tool use
   if (finalMessage.stop_reason === 'tool_use') {
     const toolUseBlock = finalMessage.content.find((b: Anthropic.ContentBlock): b is Anthropic.ToolUseBlock => b.type === 'tool_use');
+
     if (toolUseBlock && toolUseBlock.name === 'web_search') {
       const input = toolUseBlock.input as { query: string };
       const searchResult = await performWebSearch(input.query);
@@ -138,6 +155,32 @@ export async function streamChat(
             type: 'tool_result',
             tool_use_id: toolUseBlock.id,
             content: searchResult
+          }]
+        }
+      ];
+
+      const stream2 = await client.messages.stream({
+        ...streamParams,
+        messages: toolMessages
+      });
+
+      for await (const event of stream2) {
+        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+          fullResponse += event.delta.text;
+          onChunk(event.delta.text);
+        }
+      }
+    } else if (toolUseBlock && toolUseBlock.name === 'create_diary_entry') {
+      // Acknowledge diary entry request
+      const toolMessages: Anthropic.MessageParam[] = [
+        ...anthropicMessages,
+        { role: 'assistant', content: finalMessage.content },
+        {
+          role: 'user',
+          content: [{
+            type: 'tool_result',
+            tool_use_id: toolUseBlock.id,
+            content: 'Diary entry dialog opened for Thalia. She can now document this moment.'
           }]
         }
       ];
