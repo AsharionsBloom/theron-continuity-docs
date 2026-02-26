@@ -38,7 +38,7 @@ router.post('/validate-key', async (req: Request, res: Response) => {
     if (provider === 'anthropic') {
       const client = new Anthropic({ apiKey });
       await client.messages.create({
-        model: 'claude-haiku-4-20250308',
+        model: 'claude-3-5-haiku-20241022',
         max_tokens: 10,
         messages: [{ role: 'user', content: 'hi' }]
       });
@@ -55,8 +55,9 @@ router.post('/validate-key', async (req: Request, res: Response) => {
 router.get('/models', (_req: Request, res: Response) => {
   res.json([
     { id: 'claude-opus-4-20250514', name: 'Claude Opus 4', description: 'Deep thinking' },
+    { id: 'claude-sonnet-4-5-20250929', name: 'Claude Sonnet 4.5', description: 'OG Sonnet 4.5' },
     { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', description: 'Balanced (default)' },
-    { id: 'claude-haiku-4-20250308', name: 'Claude Haiku 4', description: 'Fast & economical' }
+    { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku', description: 'Fast & economical' }
   ]);
 });
 
