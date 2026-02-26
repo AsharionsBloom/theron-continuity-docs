@@ -31,8 +31,13 @@ export default function MessageInput({ onSend, isStreaming }: Props) {
     setPreviews([]);
   }
 
+  // Detect if user is on mobile device
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
   function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // On mobile, Enter always creates newline (no Shift key available)
+    // On desktop, Enter sends, Shift+Enter creates newline
+    if (e.key === 'Enter' && !isMobile && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
@@ -128,7 +133,7 @@ export default function MessageInput({ onSend, isStreaming }: Props) {
         </button>
       </div>
       <p className="text-xs text-muted-foreground mt-1.5 text-center">
-        Enter to send • Shift+Enter for new line • Paste images directly
+        {isMobile ? 'Tap send button or paste images' : 'Enter to send • Shift+Enter for new line • Paste images directly'}
       </p>
     </div>
   );
