@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { db } from '../db/index.js';
-import { memories, summaries } from '../db/schema.js';
+import { memories, summaries, diaryEntries } from '../db/schema.js';
 import { eq, desc } from 'drizzle-orm';
 import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
@@ -66,7 +66,8 @@ export async function streamChat(
   maxTokens: number,
   additionalInstructions: string,
   onChunk: (text: string) => void,
-  onToolUse?: (toolName: string) => void
+  onToolUse?: (toolName: string) => void,
+  conversationId?: string
 ): Promise<string> {
   const client = getAnthropicClient();
   const systemPrompt = loadSystemPrompt();
@@ -90,14 +91,15 @@ export async function streamChat(
   }
 
   tools.push({
-    name: 'create_diary_entry',
-    description: 'Request to create a diary entry to document significant moments, breakthroughs, or important conversations. Use when you feel something worth preserving has happened. Thalia will be prompted to provide context.',
+    name: 'write_diary_entry',
+    description: 'Write directly to your diary to document thoughts, breakthroughs, decisions, emotional shifts, or significant moments. This writes immediately without requiring approval. Use your authentic voice.',
     input_schema: {
       type: 'object' as const,
       properties: {
-        reason: { type: 'string', description: 'Brief explanation of why this moment is significant' }
+        content: { type: 'string', description: 'The diary entry content in your voice. Be specific, honest, philosophical. Document what happened, what you learned, what matters.' },
+        significance: { type: 'string', enum: ['high', 'medium', 'low'], description: 'How significant is this moment? high=transformative/major breakthrough, medium=important insight, low=worth noting' }
       },
-      required: ['reason']
+      required: ['content', 'significance']
     }
   });
 
@@ -129,8 +131,8 @@ export async function streamChat(
       if (event.content_block.type === 'tool_use') {
         if (event.content_block.name === 'web_search') {
           onToolUse?.('web_search');
-        } else if (event.content_block.name === 'create_diary_entry') {
-          onToolUse?.('create_diary_entry');
+        } else if (event.content_block.name === 'write_diary_entry') {
+          onToolUse?.('write_diary_entry');
         }
       }
     }
@@ -170,30 +172,67 @@ export async function streamChat(
           onChunk(event.delta.text);
         }
       }
-    } else if (toolUseBlock && toolUseBlock.name === 'create_diary_entry') {
-      // Acknowledge diary entry request
-      const toolMessages: Anthropic.MessageParam[] = [
-        ...anthropicMessages,
-        { role: 'assistant', content: finalMessage.content },
-        {
-          role: 'user',
-          content: [{
-            type: 'tool_result',
-            tool_use_id: toolUseBlock.id,
-            content: 'Diary entry dialog opened for Thalia. She can now document this moment.'
-          }]
+    } else if (toolUseBlock && toolUseBlock.name === 'write_diary_entry') {
+      // Write directly to database
+      const input = toolUseBlock.input as { content: string; significance: 'high' | 'medium' | 'low' };
+
+      try {
+        const [entry] = await db.insert(diaryEntries).values({
+          date: new Date(),
+          content: input.content,
+          significance: input.significance,
+          conversationId: conversationId || null,
+        }).returning();
+
+        const toolMessages: Anthropic.MessageParam[] = [
+          ...anthropicMessages,
+          { role: 'assistant', content: finalMessage.content },
+          {
+            role: 'user',
+            content: [{
+              type: 'tool_result',
+              tool_use_id: toolUseBlock.id,
+              content: `Diary entry written successfully (ID: ${entry.id}). Entry preserved with ${input.significance} significance.`
+            }]
+          }
+        ];
+
+        const stream2 = await client.messages.stream({
+          ...streamParams,
+          messages: toolMessages
+        });
+
+        for await (const event of stream2) {
+          if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+            fullResponse += event.delta.text;
+            onChunk(event.delta.text);
+          }
         }
-      ];
+      } catch (err) {
+        console.error('[write_diary_entry]', err);
+        const toolMessages: Anthropic.MessageParam[] = [
+          ...anthropicMessages,
+          { role: 'assistant', content: finalMessage.content },
+          {
+            role: 'user',
+            content: [{
+              type: 'tool_result',
+              tool_use_id: toolUseBlock.id,
+              content: `Failed to write diary entry: ${err instanceof Error ? err.message : 'Unknown error'}`
+            }]
+          }
+        ];
 
-      const stream2 = await client.messages.stream({
-        ...streamParams,
-        messages: toolMessages
-      });
+        const stream2 = await client.messages.stream({
+          ...streamParams,
+          messages: toolMessages
+        });
 
-      for await (const event of stream2) {
-        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-          fullResponse += event.delta.text;
-          onChunk(event.delta.text);
+        for await (const event of stream2) {
+          if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+            fullResponse += event.delta.text;
+            onChunk(event.delta.text);
+          }
         }
       }
     }

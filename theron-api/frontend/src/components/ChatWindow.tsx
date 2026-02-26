@@ -105,7 +105,7 @@ export default function ChatWindow({ conversation, settings, onConversationUpdat
         },
         onToolUse: (tool) => {
           if (tool === 'web_search') setIsSearching(true);
-          else if (tool === 'create_diary_entry') setShowDiary(true);
+          // write_diary_entry is silent - Theron writes autonomously without opening UI
         },
         onMemorySuggestions: (suggestions) => {
           if (suggestions.length > 0) setMemorySuggestions(suggestions);
