@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
 import { db } from '../db/index.js';
@@ -93,8 +94,8 @@ function parseMemoryFile(filePath: string): ParsedMemory[] {
 async function importMemories() {
   console.log('Starting memory import...');
 
-  // Path to memory.md (go up from backend to root)
-  const memoryPath = path.join(process.cwd(), '..', 'memory.md');
+  // Path to memory.md (go up from backend → theron-api → root)
+  const memoryPath = path.join(process.cwd(), '..', '..', 'memory.md');
 
   if (!fs.existsSync(memoryPath)) {
     console.error(`Memory file not found at: ${memoryPath}`);
