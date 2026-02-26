@@ -187,7 +187,7 @@ export async function generateSummary(conversationMessages: Array<{ role: string
     .join('\n\n');
 
   const response = await client.messages.create({
-    model: 'claude-haiku-4-20250308',
+    model: 'claude-haiku-4-20250514',
     max_tokens: 1024,
     messages: [{
       role: 'user',
@@ -207,7 +207,7 @@ export async function suggestMemories(
     .join('\n\n');
 
   const response = await client.messages.create({
-    model: 'claude-haiku-4-20250308',
+    model: 'claude-haiku-4-20250514',
     max_tokens: 1024,
     messages: [{
       role: 'user',
