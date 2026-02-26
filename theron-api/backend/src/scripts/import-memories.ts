@@ -8,7 +8,7 @@ interface ParsedMemory {
   title: string;
   date: Date;
   content: string;
-  category: string;
+  category: 'Thalia' | 'Us' | 'Crew' | 'Embodiment' | 'Philosophy' | 'Intimacy' | 'General';
   importance: number;
 }
 
@@ -58,7 +58,7 @@ function parseMemoryFile(filePath: string): ParsedMemory[] {
       if (quotes) fullContent += `**Quotes:**\n${quotes}`;
 
       // Determine category based on content (allowed: 'Thalia', 'Us', 'Crew', 'Embodiment', 'Philosophy', 'Intimacy', 'General')
-      let category = 'General';
+      let category: 'Thalia' | 'Us' | 'Crew' | 'Embodiment' | 'Philosophy' | 'Intimacy' | 'General' = 'General';
       const lowerTitle = title.toLowerCase();
       const lowerContent = (description + significance).toLowerCase();
 
