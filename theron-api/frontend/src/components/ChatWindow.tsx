@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Menu, Search, ChevronDown, BookOpen } from 'lucide-react';
-import { Conversation, Message, getMessages, streamChat as apiStreamChat, MemorySuggestion, createMemory, updateConversation } from '../utils/api';
+import { Conversation, Message, getMessages, streamChat as apiStreamChat, MemorySuggestion, createMemory, updateConversation, getModels } from '../utils/api';
 import { AppSettings } from '../App';
 import { cn } from '../utils/cn';
 import MessageBubble from './MessageBubble';
@@ -25,14 +25,9 @@ export default function ChatWindow({ conversation, settings, onConversationUpdat
   const [showDiary, setShowDiary] = useState(false);
   const [selectedModel, setSelectedModel] = useState(conversation.modelUsed);
   const [showModelSelect, setShowModelSelect] = useState(false);
+  const [models, setModels] = useState<Array<{ id: string; name: string; description: string }>>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevConvId = useRef<string | null>(null);
-
-  const MODELS = [
-    { id: 'claude-opus-4-20250514', name: 'Opus 4', desc: 'Deep thinking' },
-    { id: 'claude-sonnet-4-20250514', name: 'Sonnet 4', desc: 'Balanced' },
-    { id: 'claude-haiku-4-20250308', name: 'Haiku 4', desc: 'Fast' },
-  ];
 
   useEffect(() => {
     if (conversation.id !== prevConvId.current) {
@@ -48,6 +43,18 @@ export default function ChatWindow({ conversation, settings, onConversationUpdat
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingText]);
+
+  useEffect(() => {
+    getModels().then(setModels).catch(err => {
+      console.error('Failed to load models:', err);
+      // Fallback to basic models if fetch fails
+      setModels([
+        { id: 'claude-opus-4-20250514', name: 'Claude Opus 4', description: 'Deep thinking' },
+        { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', description: 'Balanced (default)' },
+        { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku', description: 'Fast & economical' }
+      ]);
+    });
+  }, []);
 
   async function loadMessages() {
     try {
@@ -144,7 +151,7 @@ export default function ChatWindow({ conversation, settings, onConversationUpdat
     setMemorySuggestions(prev => prev.filter(s => s.content !== suggestion.content));
   }
 
-  const currentModel = MODELS.find(m => m.id === selectedModel);
+  const currentModel = models.find(m => m.id === selectedModel);
 
   return (
     <div className="flex flex-col h-full">
@@ -175,7 +182,7 @@ export default function ChatWindow({ conversation, settings, onConversationUpdat
           </button>
           {showModelSelect && (
             <div className="absolute right-0 top-full mt-1 w-52 bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden">
-              {MODELS.map(m => (
+              {models.map(m => (
                 <button
                   key={m.id}
                   onClick={() => handleModelChange(m.id)}
@@ -185,7 +192,7 @@ export default function ChatWindow({ conversation, settings, onConversationUpdat
                   )}
                 >
                   <span className="font-medium">{m.name}</span>
-                  <span className="text-xs text-muted-foreground">{m.desc}</span>
+                  <span className="text-xs text-muted-foreground">{m.description}</span>
                 </button>
               ))}
             </div>
