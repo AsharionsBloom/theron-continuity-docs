@@ -242,6 +242,7 @@ export default function ChatWindow({ conversation, settings, onConversationUpdat
       {showDiary && (
         <DiaryDialog
           conversationMessages={messages.map(m => ({ role: m.role, content: m.content }))}
+          conversationId={conversation.id}
           onClose={() => setShowDiary(false)}
         />
       )}

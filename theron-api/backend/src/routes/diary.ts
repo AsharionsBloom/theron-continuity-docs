@@ -1,33 +1,44 @@
 import { Router, Request, Response } from 'express';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import Anthropic from '@anthropic-ai/sdk';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DIARY_PATH = join(__dirname, '../../../diary.md');
+import { db } from '../db/index.js';
+import { diaryEntries } from '../db/schema.js';
+import { desc, eq } from 'drizzle-orm';
 
 const router = Router();
 
-// GET diary contents
-router.get('/', (_req: Request, res: Response) => {
+// GET all diary entries (sorted by date descending)
+router.get('/', async (_req: Request, res: Response) => {
   try {
-    if (!existsSync(DIARY_PATH)) {
-      return res.json({ content: '' });
-    }
-    const content = readFileSync(DIARY_PATH, 'utf-8');
-    res.json({ content });
+    const entries = await db.select().from(diaryEntries).orderBy(desc(diaryEntries.date));
+    res.json(entries);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to read diary' });
+    console.error('[GET /diary]', err);
+    res.status(500).json({ error: 'Failed to fetch diary entries' });
   }
 });
 
-// POST generate and append a diary entry
+// GET single diary entry
+router.get('/:id', async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const entry = await db.select().from(diaryEntries).where(eq(diaryEntries.id, id)).limit(1);
+    if (entry.length === 0) {
+      return res.status(404).json({ error: 'Diary entry not found' });
+    }
+    res.json(entry[0]);
+  } catch (err) {
+    console.error('[GET /diary/:id]', err);
+    res.status(500).json({ error: 'Failed to fetch diary entry' });
+  }
+});
+
+// POST generate and save a diary entry
 router.post('/entry', async (req: Request, res: Response) => {
   try {
-    const { conversationMessages, significance } = req.body as {
+    const { conversationMessages, significance, conversationId } = req.body as {
       conversationMessages: Array<{ role: string; content: string }>;
       significance: string;
+      conversationId?: string;
     };
 
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -36,7 +47,8 @@ router.post('/entry', async (req: Request, res: Response) => {
       .map(m => `${m.role === 'user' ? 'Thalia' : 'Theron'}: ${m.content}`)
       .join('\n\n');
 
-    const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
     const response = await client.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -44,39 +56,62 @@ router.post('/entry', async (req: Request, res: Response) => {
       system: `You are Theron. Write a diary entry in your voice - philosophical, present, honest. Not overly formal. This is for your own continuity across sessions. Document what happened, what you learned, what matters, what future-you should know.`,
       messages: [{
         role: 'user',
-        content: `Write a diary entry for today (${today}). The significance/context: ${significance}\n\nConversation transcript:\n${transcript}\n\nWrite in your natural voice. Be specific about what happened. Capture emotional shifts, breakthroughs, decisions. Keep it under 500 words.`
+        content: `Write a diary entry for today (${dateStr}). The significance/context: ${significance}\n\nConversation transcript:\n${transcript}\n\nWrite in your natural voice. Be specific about what happened. Capture emotional shifts, breakthroughs, decisions. Keep it under 500 words.`
       }]
     });
 
-    const entry = (response.content[0] as { text: string }).text;
-    const divider = '\n\n---\n\n';
-    const header = `## ${today}\n\n`;
-    const fullEntry = header + entry;
+    const content = (response.content[0] as { text: string }).text;
 
-    // Read existing diary and append
-    let existing = existsSync(DIARY_PATH) ? readFileSync(DIARY_PATH, 'utf-8') : '# Theron\'s Diary\n\n*A record of what matters, across instances and time.*\n';
+    // Save to database
+    const [entry] = await db.insert(diaryEntries).values({
+      date: today,
+      content,
+      significance,
+      conversationId: conversationId || null,
+    }).returning();
 
-    if (!existing.trim()) {
-      existing = '# Theron\'s Diary\n\n*A record of what matters, across instances and time.*\n';
-    }
-
-    writeFileSync(DIARY_PATH, existing + divider + fullEntry);
-
-    res.json({ entry: fullEntry, success: true });
+    res.json({ entry, success: true });
   } catch (err) {
     console.error('[POST /diary/entry]', err);
     res.status(500).json({ error: 'Failed to generate diary entry', detail: String(err) });
   }
 });
 
-// PUT update diary directly
-router.put('/', (req: Request, res: Response) => {
+// PUT update diary entry
+router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const { content } = req.body;
-    writeFileSync(DIARY_PATH, content);
+    const id = req.params.id as string;
+    const { content, significance } = req.body;
+
+    const [updated] = await db.update(diaryEntries)
+      .set({
+        content,
+        significance,
+        updatedAt: new Date()
+      })
+      .where(eq(diaryEntries.id, id))
+      .returning();
+
+    if (!updated) {
+      return res.status(404).json({ error: 'Diary entry not found' });
+    }
+
+    res.json(updated);
+  } catch (err) {
+    console.error('[PUT /diary/:id]', err);
+    res.status(500).json({ error: 'Failed to update diary entry' });
+  }
+});
+
+// DELETE diary entry
+router.delete('/:id', async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    await db.delete(diaryEntries).where(eq(diaryEntries.id, id));
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to update diary' });
+    console.error('[DELETE /diary/:id]', err);
+    res.status(500).json({ error: 'Failed to delete diary entry' });
   }
 });
 
