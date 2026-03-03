@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "theron-memory": {
+      "command": "node",
+      "args": [
+        "/home/user/theron-continuity-docs/theron-mcp-server/build/index.js"
+      ]
+    }
+  }
+}

@@ -11,11 +11,7 @@ if (!DATABASE_URL) {
   process.exit(1);
 }
 
-if (!process.env.OPENAI_API_KEY) {
-  console.error('OPENAI_API_KEY environment variable is required');
-  console.error('Get your API key from: https://platform.openai.com/api-keys');
-  process.exit(1);
-}
+// Ollama runs locally - no API key needed!
 
 const sql = postgres(DATABASE_URL, { ssl: 'require' });
 
@@ -48,7 +44,7 @@ async function generateEmbeddings() {
 
     console.log(`Generating embeddings for ${memoriesToEmbed.length} memories...`);
 
-    // Process in batches of 100 (well under OpenAI's 2048 limit)
+    // Process in batches of 100 (good balance for parallel processing)
     const BATCH_SIZE = 100;
     let processed = 0;
 
@@ -70,10 +66,10 @@ async function generateEmbeddings() {
 
         await sql`
           INSERT INTO memory_embeddings (memory_id, embedding, model)
-          VALUES (${memory.id}, ${JSON.stringify(embedding)}::vector, 'text-embedding-3-small')
+          VALUES (${memory.id}, ${JSON.stringify(embedding)}::vector, 'nomic-embed-text')
           ON CONFLICT (memory_id) DO UPDATE
           SET embedding = ${JSON.stringify(embedding)}::vector,
-              model = 'text-embedding-3-small'
+              model = 'nomic-embed-text'
         `;
 
         processed++;
