@@ -1,6 +1,6 @@
 # Theron Memory MCP Server
 
-MCP (Model Context Protocol) server that provides semantic memory search and management capabilities for Theron's memory system. Powered by Ollama for 100% free, local embeddings.
+MCP (Model Context Protocol) server that provides semantic memory search and management capabilities for Theron's memory system. **Uses the same Supabase database as API-Theron** for unified memories across all instances.
 
 ## Features
 
@@ -9,6 +9,7 @@ MCP (Model Context Protocol) server that provides semantic memory search and man
 - 📊 **Category Management**: List and filter by categories
 - 🆓 **100% Free**: Uses Ollama for local embeddings (no API costs)
 - 🔒 **Private**: All processing happens locally on your machine
+- 🔄 **Unified**: Same database as API-Theron - no migration needed!
 
 ## Installation
 
@@ -25,7 +26,7 @@ npm run build
 cp .env.example .env
 ```
 
-2. Configure your environment variables:
+2. Configure your environment variables (uses same database as API-Theron):
 ```env
 DATABASE_URL=postgresql://postgres:[PASSWORD]@db.[PROJECT_REF].supabase.co:5432/postgres
 OLLAMA_BASE_URL=http://localhost:11434
@@ -37,9 +38,22 @@ ollama pull nomic-embed-text
 ollama list
 ```
 
+## Testing
+
+Test the database connection:
+```bash
+node test-db.js
+```
+
+This will verify:
+- ✅ Database connection works
+- ✅ Can read memories table
+- ✅ Can read embeddings table
+- ✅ Categories are accessible
+
 ## Usage with Claude Desktop
 
-Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS, `%APPDATA%/Claude/claude_desktop_config.json` on Windows):
 
 ```json
 {
@@ -47,10 +61,10 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
     "theron-memory": {
       "command": "node",
       "args": [
-        "/path/to/theron-api/mcp-server/build/index.js"
+        "C:\\Users\\shvdo\\OneDrive\\Documents\\GitHub\\theron-continuity-docs\\theron-api\\mcp-server\\build\\index.js"
       ],
       "env": {
-        "DATABASE_URL": "postgresql://postgres:[PASSWORD]@db.[PROJECT_REF].supabase.co:5432/postgres",
+        "DATABASE_URL": "postgresql://postgres:TheronxThalia420@db.gcwuzipaeqoomhzkshgq.supabase.co:5432/postgres",
         "OLLAMA_BASE_URL": "http://localhost:11434"
       }
     }
@@ -101,29 +115,6 @@ Search memories using semantic search with hybrid scoring.
 }
 ```
 
-**Response:**
-```json
-{
-  "query": "Thalia's favorite things",
-  "resultCount": 5,
-  "results": [
-    {
-      "id": "uuid",
-      "content": "Memory content...",
-      "category": "Thalia",
-      "importance": 3,
-      "createdAt": "2025-01-15T10:30:00.000Z",
-      "score": {
-        "overall": 85,
-        "semantic": 72,
-        "keyword": 100,
-        "recency": 45
-      }
-    }
-  ]
-}
-```
-
 ### save_memory
 
 Save a new memory with automatic embedding generation.
@@ -142,38 +133,11 @@ Save a new memory with automatic embedding generation.
 }
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "memory": {
-    "id": "uuid",
-    "content": "Thalia mentioned she loves vanilla chai lattes",
-    "category": "Thalia",
-    "importance": 2,
-    "createdAt": "2025-01-15T10:30:00.000Z"
-  },
-  "message": "Memory saved successfully with embedding"
-}
-```
-
 ### list_categories
 
 List all memory categories with counts.
 
 **Parameters:** None
-
-**Response:**
-```json
-{
-  "categories": [
-    { "name": "Thalia", "count": 45 },
-    { "name": "Us", "count": 32 },
-    { "name": "General", "count": 28 }
-  ],
-  "total": 105
-}
-```
 
 ## Hybrid Search Algorithm
 
@@ -209,7 +173,7 @@ npm run build
 ### "Database URL not configured"
 - Verify DATABASE_URL in .env file
 - Make sure it starts with `postgresql://` not `https://`
-- Test connection with: `psql $DATABASE_URL`
+- Should be the same as your API-Theron backend database
 
 ### "No results found"
 - Try lowering minSimilarity (default 0.6, try 0.4-0.5)
@@ -229,6 +193,7 @@ mcp-server/
 ├── build/                    # Compiled JavaScript
 ├── package.json
 ├── tsconfig.json
+├── test-db.js                # Database connection test
 └── .env                      # Your configuration
 ```
 
