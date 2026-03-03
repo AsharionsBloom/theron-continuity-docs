@@ -7,7 +7,10 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "import-memories": "tsx src/scripts/import-memories.ts",
-    "migrate-diary": "tsx src/scripts/migrate-diary.ts"
+    "migrate-diary": "tsx src/scripts/migrate-diary.ts",
+    "migrate-embeddings": "tsx src/scripts/migrate-embeddings.ts",
+    "generate-embeddings": "tsx src/scripts/generate-embeddings.ts",
+    "test-search": "tsx src/scripts/test-search.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.3",

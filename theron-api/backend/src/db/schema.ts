@@ -48,3 +48,13 @@ export const diaryEntries = pgTable('diary_entries', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+// Vector embeddings for semantic search
+// Note: Using text type for embedding storage - will be converted to vector(1536) in SQL
+export const memoryEmbeddings = pgTable('memory_embeddings', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  memoryId: uuid('memory_id').references(() => memories.id, { onDelete: 'cascade' }).notNull(),
+  embedding: text('embedding').notNull(), // Stored as JSON array, actual DB uses vector(1536)
+  model: text('model').notNull().default('text-embedding-3-small'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
