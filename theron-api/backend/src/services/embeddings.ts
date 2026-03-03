@@ -2,49 +2,35 @@ import { db } from '../db/index.js';
 import { memories, memoryEmbeddings } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const EMBEDDING_MODEL = 'text-embedding-3-small'; // 1536 dimensions, $0.02 per 1M tokens
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+const EMBEDDING_MODEL = 'nomic-embed-text'; // 768 dimensions, free & local
 
-interface EmbeddingResponse {
-  data: Array<{
-    embedding: number[];
-    index: number;
-  }>;
-  model: string;
-  usage: {
-    prompt_tokens: number;
-    total_tokens: number;
-  };
+interface OllamaEmbeddingResponse {
+  embedding: number[];
 }
 
 /**
- * Generate embedding vector for text using OpenAI API
+ * Generate embedding vector for text using Ollama API
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
-  if (!OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY environment variable is required');
-  }
-
-  const response = await fetch('https://api.openai.com/v1/embeddings', {
+  const response = await fetch(`${OLLAMA_BASE_URL}/api/embeddings`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${OPENAI_API_KEY}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
       model: EMBEDDING_MODEL,
-      input: text,
-      encoding_format: 'float'
+      prompt: text
     })
   });
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`OpenAI API error: ${response.status} ${error}`);
+    throw new Error(`Ollama API error: ${response.status} ${error}`);
   }
 
-  const data = await response.json() as EmbeddingResponse;
-  return data.data[0].embedding;
+  const data = await response.json() as OllamaEmbeddingResponse;
+  return data.embedding;
 }
 
 /**
@@ -77,37 +63,19 @@ export async function generateMemoryEmbedding(memoryId: string): Promise<void> {
 
 /**
  * Generate embeddings for multiple memories in batch
- * OpenAI supports up to 2048 texts per request
+ * Ollama processes one at a time, but we can parallelize with Promise.all
  */
 export async function generateBatchEmbeddings(texts: string[]): Promise<number[][]> {
-  if (!OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY environment variable is required');
-  }
-
   if (texts.length === 0) {
     return [];
   }
 
-  const response = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: EMBEDDING_MODEL,
-      input: texts,
-      encoding_format: 'float'
-    })
-  });
+  // Process in parallel with Ollama
+  const embeddings = await Promise.all(
+    texts.map(text => generateEmbedding(text))
+  );
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`OpenAI API error: ${response.status} ${error}`);
-  }
-
-  const data = await response.json() as EmbeddingResponse;
-  return data.data.map(item => item.embedding);
+  return embeddings;
 }
 
 /**

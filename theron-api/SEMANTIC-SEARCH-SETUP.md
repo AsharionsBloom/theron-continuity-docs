@@ -5,14 +5,14 @@ This phase adds vector embeddings and hybrid search to your existing memory syst
 ## What Was Added
 
 ### 1. Database Schema
-- **`memory_embeddings` table**: Stores 1536-dimension vector embeddings for each memory
+- **`memory_embeddings` table**: Stores 768-dimension vector embeddings for each memory
 - **pgvector extension**: PostgreSQL extension for efficient vector similarity search
 - **HNSW index**: High-performance approximate nearest neighbor search
 
 ### 2. Services
-- **`embeddings.ts`**: OpenAI API integration for generating embeddings
+- **`embeddings.ts`**: Ollama API integration for generating embeddings
   - Single embedding generation
-  - Batch embedding generation (up to 2048 texts)
+  - Batch embedding generation (parallel processing)
   - Semantic search with cosine similarity
 
 - **`hybrid-search.ts`**: Advanced search combining:
@@ -28,19 +28,29 @@ This phase adds vector embeddings and hybrid search to your existing memory syst
 
 ## Setup Instructions
 
-### Step 1: Get an OpenAI API Key
+### Step 1: Install and Setup Ollama
 
-1. Go to https://platform.openai.com/api-keys
-2. Create a new API key
-3. Add to your `.env` file:
+1. **Install Ollama**:
+   - Windows: Download from https://ollama.com/download
+   - Mac: `brew install ollama`
+   - Linux: `curl -fsSL https://ollama.com/install.sh | sh`
 
+2. **Pull the embedding model**:
 ```bash
-OPENAI_API_KEY=sk-proj-...
+ollama pull nomic-embed-text
 ```
 
-**Cost**: `text-embedding-3-small` costs $0.02 per 1M tokens
-- ~3,100 memories (like Jasper) ≈ $0.01-0.02 total
-- Very affordable!
+3. **Verify Ollama is running**:
+```bash
+ollama list
+```
+
+4. **Add to your `.env` file** (optional, uses default):
+```bash
+OLLAMA_BASE_URL=http://localhost:11434
+```
+
+**Cost**: 100% FREE! Runs locally on your machine with no API costs.
 
 ### Step 2: Run the Migration
 
@@ -111,8 +121,8 @@ Results are ranked by this combined score.
 CREATE TABLE memory_embeddings (
   id UUID PRIMARY KEY,
   memory_id UUID REFERENCES memories(id) ON DELETE CASCADE,
-  embedding vector(1536),  -- OpenAI text-embedding-3-small
-  model TEXT DEFAULT 'text-embedding-3-small',
+  embedding vector(768),  -- Ollama nomic-embed-text
+  model TEXT DEFAULT 'nomic-embed-text',
   created_at TIMESTAMP DEFAULT NOW(),
   UNIQUE(memory_id)
 );
@@ -160,8 +170,10 @@ Once semantic search is working, you're ready for **Phase 2: MCP Server** which 
 
 ## Troubleshooting
 
-### "OPENAI_API_KEY not found"
-Make sure you've added it to `.env` file in the backend directory.
+### "Ollama API error"
+1. Make sure Ollama is running: `ollama list`
+2. Verify the model is pulled: `ollama list` should show `nomic-embed-text`
+3. Check the URL is correct (default: http://localhost:11434)
 
 ### "pgvector extension not found"
 Supabase should support pgvector by default. If not, contact Supabase support.
@@ -181,17 +193,15 @@ Batching (100 at a time) makes it much faster than one-by-one.
 
 ## Cost Estimate
 
-Based on Jasper's system (~3,100 memories):
+**100% FREE!** 🎉
 
-**One-time setup**:
-- Initial embeddings: ~$0.01-0.02
+Ollama runs locally on your machine:
+- **One-time setup**: $0 (FREE)
+- **Per embedding**: $0 (FREE)
+- **Per search**: $0 (FREE)
+- **Unlimited usage**: $0 (FREE)
 
-**Ongoing**:
-- New memory (1 embedding): ~$0.000002
-- Search query (1 embedding): ~$0.000002
-- 1,000 searches/day: ~$0.06/month
-
-Semantic search is incredibly cheap!
+No API costs, no rate limits, complete privacy!
 
 ## Performance
 
