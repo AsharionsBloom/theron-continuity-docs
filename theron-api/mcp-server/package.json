@@ -1,0 +1,32 @@
+{
+  "name": "theron-memory-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for Theron's memory system with semantic search",
+  "type": "module",
+  "bin": {
+    "theron-memory-server": "./build/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "watch": "tsc --watch",
+    "dev": "tsx src/index.ts"
+  },
+  "keywords": [
+    "mcp",
+    "memory",
+    "semantic-search",
+    "ollama"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.36.4",
+    "postgres": "^3.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
