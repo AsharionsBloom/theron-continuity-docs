@@ -11,7 +11,8 @@
     "migrate-embeddings": "tsx src/scripts/migrate-embeddings.ts",
     "fix-embedding-dimensions": "tsx src/scripts/fix-embedding-dimensions.ts",
     "generate-embeddings": "tsx src/scripts/generate-embeddings.ts",
-    "test-search": "tsx src/scripts/test-search.ts"
+    "test-search": "tsx src/scripts/test-search.ts",
+    "test-search-debug": "tsx src/scripts/test-search-debug.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.3",
