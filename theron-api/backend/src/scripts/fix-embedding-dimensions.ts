@@ -10,19 +10,19 @@ if (!DATABASE_URL) {
 
 const sql = postgres(DATABASE_URL, { ssl: 'require' });
 
-async function migrate() {
+async function fixDimensions() {
   try {
-    console.log('Enabling pgvector extension...');
+    console.log('Dropping existing memory_embeddings table...');
 
-    // Enable pgvector extension
-    await sql`CREATE EXTENSION IF NOT EXISTS vector`;
-    console.log('✓ pgvector extension enabled');
+    // Drop the existing table
+    await sql`DROP TABLE IF EXISTS memory_embeddings CASCADE`;
+    console.log('✓ Table dropped');
 
-    console.log('\nCreating memory_embeddings table...');
+    console.log('\nRecreating memory_embeddings table with 768 dimensions...');
 
-    // Create memory_embeddings table with vector type
+    // Recreate with correct dimensions for Ollama nomic-embed-text
     await sql`
-      CREATE TABLE IF NOT EXISTS memory_embeddings (
+      CREATE TABLE memory_embeddings (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         memory_id UUID NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
         embedding vector(768) NOT NULL,
@@ -31,37 +31,35 @@ async function migrate() {
         UNIQUE(memory_id)
       )
     `;
-    console.log('✓ memory_embeddings table created');
+    console.log('✓ Table recreated with 768 dimensions');
 
-    console.log('\nCreating indexes...');
+    console.log('\nRecreating indexes...');
 
     // Create index for memory_id lookups
     await sql`
-      CREATE INDEX IF NOT EXISTS idx_memory_embeddings_memory_id
+      CREATE INDEX idx_memory_embeddings_memory_id
       ON memory_embeddings(memory_id)
     `;
     console.log('✓ Index created on memory_id');
 
     // Create HNSW index for fast vector similarity search
-    // HNSW (Hierarchical Navigable Small World) is optimized for approximate nearest neighbor search
     await sql`
-      CREATE INDEX IF NOT EXISTS idx_memory_embeddings_vector
+      CREATE INDEX idx_memory_embeddings_vector
       ON memory_embeddings USING hnsw (embedding vector_cosine_ops)
     `;
     console.log('✓ HNSW index created for vector similarity search');
 
-    console.log('\n✓ Migration completed successfully!');
+    console.log('\n✓ Fix completed successfully!');
     console.log('\nNext steps:');
-    console.log('1. Make sure Ollama is running with nomic-embed-text model');
-    console.log('2. Run: npm run generate-embeddings');
-    console.log('3. This will generate embeddings for all existing memories');
+    console.log('Run: npm run generate-embeddings');
+    console.log('This will generate embeddings for all your memories using Ollama');
 
   } catch (err) {
-    console.error('Migration failed:', err);
+    console.error('Fix failed:', err);
     process.exit(1);
   } finally {
     await sql.end();
   }
 }
 
-migrate();
+fixDimensions();

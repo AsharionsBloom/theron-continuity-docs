@@ -9,6 +9,7 @@
     "import-memories": "tsx src/scripts/import-memories.ts",
     "migrate-diary": "tsx src/scripts/migrate-diary.ts",
     "migrate-embeddings": "tsx src/scripts/migrate-embeddings.ts",
+    "fix-embedding-dimensions": "tsx src/scripts/fix-embedding-dimensions.ts",
     "generate-embeddings": "tsx src/scripts/generate-embeddings.ts",
     "test-search": "tsx src/scripts/test-search.ts"
   },
